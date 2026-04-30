@@ -21,7 +21,7 @@ var userRoutes = []Route{
 
 	{
 		URI:    "/users/{userID}",
-		Method: http.MethodGet,
+		Method: http.MethodPut,
 		Func:   controller.UpdateUser,
 	},
 
