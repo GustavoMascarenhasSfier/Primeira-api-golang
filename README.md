@@ -168,7 +168,7 @@ Remove um usuário pelo ID.
 
 Realiza uma busca na **Google Books API** (`https://www.googleapis.com/books/v1/volumes`) com o texto enviado no corpo da requisição.
 
-> ⚠️ Este endpoint requer uma **chave de API** do Google Books passada via query string.
+> ⚠️ Este endpoint requer uma **chave de API** do Google Books passada via query string, **direto pelo Postman**.
 
 **Como obter uma chave:**
 1. Acesse o Google Cloud Console
