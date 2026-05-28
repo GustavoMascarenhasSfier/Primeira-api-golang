@@ -37,7 +37,7 @@ func HandleSearch(w http.ResponseWriter, r *http.Request) {
 	resp, err := http.DefaultClient.Do(gReq)
 	if err != nil {
 		fmt.Println("❌ ERRO REQUEST GOOGLE:", err)
-		writeJSON(w, http.StatusInternalServerError, err.Error())
+		JSON(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 	defer resp.Body.Close()
@@ -47,7 +47,7 @@ func HandleSearch(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		fmt.Println("❌ ERRO READ BODY:", err)
-		writeJSON(w, http.StatusInternalServerError, err.Error())
+		JSON(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -58,9 +58,17 @@ func HandleSearch(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write(body)
 }
 
-// writeJSON facilita o retorno de erros em JSON
-func writeJSON(w http.ResponseWriter, status int, v any) {
+// JSON facilita o retorno de erros em JSON
+func JSON(w http.ResponseWriter, statusCode int, data interface{}) {
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	_ = json.NewEncoder(w).Encode(v)
+	w.WriteHeader(statusCode)
+	_ = json.NewEncoder(w).Encode(data)
+}
+
+func Err (w http.ResponseWriter, statusCode int, err error) {
+	JSON(w, statusCode, struct{
+		Err string `json:"error"`
+	}{
+		Err: err.Error(),
+	})
 }
