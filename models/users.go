@@ -1,9 +1,11 @@
 package models
 
 import (
+	"Api-Aula1-golang/utils"
 	"errors"
 	"strings"
 
+	"github.com/badoux/checkmail"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -16,9 +18,6 @@ type User struct {
 	Email string `json:"email"`
 	Senha string `json:"senha"`
 }
-
-//Crud
-//1-Criar usuário
 
 func (u *User) Prepare(step string) error {
 	//chamamos o validate()
@@ -54,8 +53,13 @@ func (u *User) Validate(step string) error {
 	if step == "create" && u.Senha == "" {
 		return errors.New("senha é obrigatória")
 	}
-	if !strings.Contains(u.Email, "@") {
-		return errors.New("email inválido")
+
+	if err := checkmail.ValidateFormat(u.Email); err != nil {
+		return err
+	}
+
+	if err := utils.CPFvalidator(u.CPF); err != nil {
+		return err
 	}
 
 	return nil
@@ -66,6 +70,10 @@ func (u *User) Format(step string) error {
 	u.Name = strings.TrimSpace(u.Name)
 	u.Email = strings.TrimSpace(u.Email)
 	u.CPF = strings.TrimSpace(u.CPF)
+
+	//tornar letras minusculas
+	u.Name = strings.ToLower(u.Name)
+	u.Email = strings.ToLower(u.Email)
 
 	if step == "create" {
 		hashed, err := hashPassword(u.Senha)
