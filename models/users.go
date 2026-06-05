@@ -1,15 +1,13 @@
 package models
 
 import (
+	"Api-Aula1-golang/security"
 	"Api-Aula1-golang/utils"
 	"errors"
 	"strings"
 
 	"github.com/badoux/checkmail"
-	"golang.org/x/crypto/bcrypt"
 )
-
-//aqui que coloco as regras de negocios que eu quero que as coisas funcionem
 
 type User struct {
 	ID    int64  `json:"id"`
@@ -20,8 +18,6 @@ type User struct {
 }
 
 func (u *User) Prepare(step string) error {
-	//chamamos o validate()
-	//chamamos o format()
 	if err := u.Validate(step); err != nil {
 		return err
 	}
@@ -31,13 +27,9 @@ func (u *User) Prepare(step string) error {
 	}
 
 	return nil
-
 }
 
 func (u *User) Validate(step string) error {
-	//aqui vamos verificar se os campos recebidos do usuario nao estao vazios
-	//validar. se o cpf e valido
-
 	if u.Name == "" {
 		return errors.New("nome é obrigatório")
 	}
@@ -63,7 +55,6 @@ func (u *User) Validate(step string) error {
 	}
 
 	return nil
-
 }
 
 func (u *User) Format(step string) error {
@@ -71,29 +62,16 @@ func (u *User) Format(step string) error {
 	u.Email = strings.TrimSpace(u.Email)
 	u.CPF = strings.TrimSpace(u.CPF)
 
-	//tornar letras minusculas
 	u.Name = strings.ToLower(u.Name)
 	u.Email = strings.ToLower(u.Email)
 
-	if step == "create" {
-		hashed, err := hashPassword(u.Senha)
+	if step == "create" && u.Senha != "" {
+		hashedPassword, err := security.Hash(u.Senha)
 		if err != nil {
 			return err
 		}
-		u.Senha = string(hashed)
-	}
-
-	if u.Senha != "" {
-		hashed, err := hashPassword(u.Senha)
-		if err != nil {
-			return err
-		}
-		u.Senha = string(hashed)
+		u.Senha = string(hashedPassword)
 	}
 
 	return nil
-}
-
-func hashPassword(password string) ([]byte, error) {
-	return bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 }

@@ -35,6 +35,39 @@ func (u UserRepo) Create(user models.User) (int64, error) {
 	return lastId, nil
 }
 
+func (u UserRepo) FetchByEmail(email string) (DBuser models.User, err error) {
+	line, err := u.db.Query("SELECT id, email, password FROM users WHERE email = ?", email)
+	if err != nil {
+		return models.User{}, err
+	}
+	defer line.Close()
+
+	if line.Next() {
+		err := line.Scan(&DBuser.ID, &DBuser.Email, &DBuser.Senha)
+		if err != nil {
+			return models.User{}, err
+		}
+	}
+
+	return DBuser, nil
+}
+
+func (u UserRepo) FindByID(id int64) (models.User, error) {
+	query := `SELECT id, name, email, cpf FROM users WHERE id = ?`
+
+	row := u.db.QueryRow(query, id)
+
+	var user models.User
+	if err := row.Scan(&user.ID, &user.Name, &user.Email, &user.CPF); err != nil {
+		if err == sql.ErrNoRows {
+			return models.User{}, nil // usuário não encontrado
+		}
+		return models.User{}, err
+	}
+
+	return user, nil
+}
+
 func (u UserRepo) FindAll() ([]models.User, error) {
 	query := `SELECT id, name, email, cpf FROM users`
 
@@ -54,17 +87,4 @@ func (u UserRepo) FindAll() ([]models.User, error) {
 	}
 
 	return users, nil
-}
-
-func (u UserRepo) FindByID(id int64) (models.User, error) {
-	query := `SELECT id, name, email, cpf FROM users WHERE id = ?`
-
-	row := u.db.QueryRow(query, id)
-
-	var user models.User
-	if err := row.Scan(&user.ID, &user.Name, &user.Email, &user.CPF); err != nil {
-		return models.User{}, err
-	}
-
-	return user, nil
 }
