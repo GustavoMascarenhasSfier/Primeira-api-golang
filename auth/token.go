@@ -14,17 +14,14 @@ import (
 func GenerateToken(userID uint64) (string, error) {
 	permissions := jwt.MapClaims{}
 	permissions["authorized"] = true
-	permissions["exp"] = time.Now().Add(time.Hour * 6).Unix() //tempo onde expira o token do usuario
+	permissions["exp"] = time.Now().Add(time.Hour * 6).Unix()
 	permissions["userId"] = userID
 
-	//jwt e um dos metodos para assinaturas de tokens
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, permissions)
 	println(token)
 	return token.SignedString(config.SecretKey)
-
 }
 
-// validacao do recebimento do token
 func ValidateToken(r *http.Request) error {
 	tokenString := extractToken(r)
 	token, err := jwt.Parse(tokenString, retriveAuthKey)
@@ -37,11 +34,29 @@ func ValidateToken(r *http.Request) error {
 	}
 
 	return errors.New("Invalid token")
-
 }
 
-// valida se o token esta dentro do objeto do corpo da requisicao
-// extrai apenas o token para a validacao
+// ExtractUserID extrai o ID do usuário do token JWT da requisição
+func ExtractUserID(r *http.Request) (int64, error) {
+	tokenString := extractToken(r)
+	token, err := jwt.Parse(tokenString, retriveAuthKey)
+	if err != nil {
+		return 0, err
+	}
+
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok || !token.Valid {
+		return 0, errors.New("token inválido")
+	}
+
+	userID, ok := claims["userId"].(float64)
+	if !ok {
+		return 0, errors.New("userId não encontrado no token")
+	}
+
+	return int64(userID), nil
+}
+
 func extractToken(r *http.Request) string {
 	token := r.Header.Get("Authorization")
 	if len(strings.Split(token, " ")) == 2 {

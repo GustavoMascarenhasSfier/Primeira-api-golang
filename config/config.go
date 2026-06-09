@@ -39,11 +39,12 @@ func LoadEnv() {
 
 	Port = os.Getenv("API_PORT")
 	Cfg = mysql.Config{
-		User:   os.Getenv("DB_USER"),
-		Passwd: os.Getenv("DB_PASSWORD"),
-		Net:    "tcp",
-		Addr:   os.Getenv("DB_ADDR"),
-		DBName: os.Getenv("DB_DATABASE"),
+		User:      os.Getenv("DB_USER"),
+		Passwd:    os.Getenv("DB_PASSWORD"),
+		Net:       "tcp",
+		Addr:      os.Getenv("DB_ADDR"),
+		DBName:    os.Getenv("DB_DATABASE"),
+		ParseTime: true,
 	}
 
 	SecretKey = []byte(os.Getenv("SECRET_KEY"))

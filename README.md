@@ -1,122 +1,219 @@
-# Primeira API em Go
+# 📚 Treehouse Library API
 
-Uma API RESTful desenvolvida em Go como projeto de aprendizado, com gerenciamento de usuários em memória e integração com a API do Google Books.
-
----
-
-## Tecnologias Utilizadas
-
-| Tecnologia | Versão | Finalidade |
-|---|---|---|
-| [Go](https://golang.org/) | 1.26.1 | Linguagem principal |
-| [Gorilla Mux](https://github.com/gorilla/mux) | v1.8.1 | Roteamento HTTP |
-| [godotenv](https://github.com/joho/godotenv) | v1.5.1 | Variáveis de ambiente |
-| [bcrypt](https://pkg.go.dev/golang.org/x/crypto/bcrypt) | v0.50.0 | Hash de senhas |
+API REST desenvolvida em Go para gerenciamento de uma biblioteca pessoal. Cada usuário pode criar sua conta, fazer login e montar sua própria coleção de livros — pesquisando pelo Google Books ou cadastrando manualmente.
 
 ---
 
-## Estrutura do Projeto
+## 🛠️ Tecnologias
+
+- **Go** — linguagem principal
+- **Gorilla Mux** — roteador HTTP
+- **MySQL** — banco de dados
+- **JWT** — autenticação via token
+- **Google Books API** — pesquisa de livros
+- **bcrypt** — hash de senhas
+
+---
+
+## 📁 Estrutura do Projeto
 
 ```
-Primeira-api-golang-main/
-├── main.go                      # Ponto de entrada da aplicação
-├── go.mod                       # Dependências do módulo
-├── go.sum                       # Checksums das dependências
-│
-├── router/
-│   ├── router.go                # Cria e retorna o roteador principal (Gorilla Mux)
-│   └── routes/
-│       ├── routes.go            # Registra todas as rotas na aplicação
-│       ├── user.go              # Rotas de usuários
-│       └── books.go             # Rotas de livros
-│
-├── controller/
-│   ├── user.go                  # Handlers CRUD de usuários
-│   └── books_handler.go         # Handler para busca de livros (Google Books API)
-│
-└── models/
-    └── users.go                 # Estrutura User + validação + formatação
+Primeira-api-golang/
+├── auth/           # Geração e validação de JWT
+├── config/         # Carregamento do .env e configuração do banco
+├── controller/     # Handlers HTTP (lógica de cada rota)
+├── middlewares/    # Logger e autenticação
+├── models/         # Structs de User e Book
+├── persistency/    # Conexão com o banco de dados
+├── repository/     # Queries SQL (User e Book)
+├── responses/      # Helpers para resposta JSON
+├── router/         # Registro de rotas
+├── security/       # Hash e validação de senha
+├── sql/            # DDL do banco de dados
+├── utils/          # Validador de CPF
+└── main.go
 ```
 
 ---
 
-## Como Rodar o Projeto
+## ⚙️ Como rodar o projeto
 
-### Pré-requisitos
+### 1. Pré-requisitos
 
-- [Go](https://golang.org/dl/) instalado (versão 1.21+)
-- Acesso à internet (para o endpoint de livros)
+- Go instalado (1.21+)
+- MySQL rodando localmente
+- Git
 
-### Passo a passo
+### 2. Clonar o repositório
 
 ```bash
-# 1. Clone ou extraia o projeto
 git clone <url-do-repositorio>
-cd Primeira-api-golang-main
+cd Primeira-api-golang
+```
 
-# 2. Instale as dependências
+### 3. Criar o banco de dados
+
+Abra seu cliente MySQL e execute o arquivo:
+
+```bash
+mysql -u root -p < sql/ddl.sql
+```
+
+Isso vai criar o banco `treehousedb` com as tabelas `users` e `books`.
+
+### 4. Configurar o `.env`
+
+Edite o arquivo `config/.env` com suas credenciais:
+
+```env
+DB_USER=root
+DB_PASSWORD=sua_senha
+DB_ADDR=localhost:3306
+DB_DATABASE=treehousedb
+
+API_PORT=:8080
+
+SECRET_KEY=sua_chave_secreta
+```
+
+### 5. Instalar dependências
+
+```bash
 go mod tidy
+```
 
-# 3. Execute a aplicação
+### 6. Rodar a API
+
+```bash
 go run main.go
 ```
 
-O servidor irá iniciar em **http://localhost:8080** e você verá no terminal:
+A API estará disponível em `http://localhost:8080`.
+
+---
+
+## 🗄️ Banco de Dados
+
+### Tabela `users`
+
+| Coluna     | Tipo         | Descrição              |
+|------------|--------------|------------------------|
+| id         | INT PK AI    | Identificador único    |
+| name       | VARCHAR(100) | Nome do usuário        |
+| cpf        | VARCHAR(14)  | CPF (único)            |
+| email      | VARCHAR(100) | E-mail (único)         |
+| password   | VARCHAR(255) | Senha em bcrypt        |
+
+### Tabela `books`
+
+| Coluna      | Tipo         | Descrição                        |
+|-------------|--------------|----------------------------------|
+| id          | INT PK AI    | Identificador único              |
+| user_id     | INT FK       | Referência ao dono do livro      |
+| title       | VARCHAR(255) | Título do livro                  |
+| author      | VARCHAR(255) | Autor                            |
+| description | TEXT         | Descrição (opcional)             |
+| publisher   | VARCHAR(255) | Editora (opcional)               |
+| year        | INT          | Ano de publicação (opcional)     |
+| created_at  | TIMESTAMP    | Data de adição à biblioteca      |
+
+> `books.user_id` tem `FOREIGN KEY` para `users.id` com `ON DELETE CASCADE` — ao deletar um usuário, todos os seus livros são removidos automaticamente.
+
+---
+
+## 🔐 Autenticação
+
+A API usa **JWT (JSON Web Token)**. Após o login, você recebe um token que deve ser enviado no header de todas as rotas protegidas:
 
 ```
-2024/xx/xx xx:xx:xx Servidor rodando em http://localhost:8080
+Authorization: Bearer SEU_TOKEN_AQUI
+```
+
+O token expira em **6 horas**.
+
+---
+
+## 🚀 Rotas
+
+### Resumo
+
+| Método | Rota               | Auth | Descrição                        |
+|--------|--------------------|------|----------------------------------|
+| POST   | /users             | ❌   | Criar usuário                    |
+| GET    | /users             | ✅   | Listar todos os usuários         |
+| GET    | /users/{userID}    | ✅   | Buscar usuário por ID            |
+| POST   | /login             | ❌   | Login e geração de token         |
+| POST   | /books/search      | ❌   | Pesquisar livros no Google Books |
+| POST   | /library           | ✅   | Adicionar livro à biblioteca     |
+| GET    | /library           | ✅   | Ver toda a sua biblioteca        |
+| GET    | /library/{bookID}  | ✅   | Ver um livro específico          |
+| PUT    | /library/{bookID}  | ✅   | Editar um livro                  |
+| DELETE | /library/{bookID}  | ✅   | Remover um livro                 |
+
+---
+
+## 📬 Testando no Postman
+
+### Dica: salvar o token automaticamente
+
+Na requisição de **Login**, vá na aba **Tests** e cole:
+
+```javascript
+pm.environment.set("token", pm.response.text());
+```
+
+Crie um **Environment** no Postman e em todas as rotas autenticadas use no header:
+
+```
+Authorization: Bearer {{token}}
 ```
 
 ---
 
-## Endpoints Disponíveis
+### 👤 Usuários
 
-###  Usuários
-
-> **Atenção:** os dados são armazenados **em memória**. Ao reiniciar o servidor, todos os usuários são perdidos.
-
----
-
-#### `POST /users` — Criar usuário
-
-Cria um novo usuário. A senha é automaticamente convertida para hash com **bcrypt**.
-
-**Body (JSON):**
+#### Criar usuário
+```
+POST http://localhost:8080/users
+```
+Body → raw → JSON:
 ```json
 {
   "name": "João Silva",
   "email": "joao@email.com",
-  "cpf": "12345678900",
-  "senha": "minhasenha123"
+  "cpf": "529.982.247-25",
+  "senha": "123456"
 }
 ```
-
-**Resposta (201 Created):**
+Resposta `201`:
 ```json
 {
   "id": 1,
-  "name": "João Silva",
+  "name": "joão silva",
+  "cpf": "529.982.247-25",
   "email": "joao@email.com",
-  "cpf": "12345678900",
-  "senha": ""
+  "senha": "$2a$10$..."
 }
 ```
-> 🔒 A senha **nunca** é retornada na resposta.
 
 ---
 
-#### `GET /users` — Listar usuários
-
-Retorna todos os usuários cadastrados (sem as senhas).
-
-**Resposta (200 OK):**
+#### Listar todos os usuários
+```
+GET http://localhost:8080/users
+```
+Header:
+```
+Authorization: Bearer {{token}}
+```
+Resposta `200`:
 ```json
 [
   {
     "id": 1,
-    "name": "João Silva",
+    "name": "joão silva",
+    "cpf": "529.982.247-25",
     "email": "joao@email.com",
-    "cpf": "12345678900",
     "senha": ""
   }
 ]
@@ -124,158 +221,202 @@ Retorna todos os usuários cadastrados (sem as senhas).
 
 ---
 
-#### `PUT /users/{userID}` — Atualizar usuário
-
-Atualiza os dados de um usuário existente pelo ID.
-
-**Parâmetro de URL:** `userID` (número inteiro)
-
-**Body (JSON):**
+#### Buscar usuário por ID
+```
+GET http://localhost:8080/users/1
+```
+Header:
+```
+Authorization: Bearer {{token}}
+```
+Resposta `200`:
 ```json
 {
-  "name": "João Atualizado",
-  "email": "novo@email.com",
-  "cpf": "12345678900",
-  "senha": "novasenha456"
+  "id": 1,
+  "name": "joão silva",
+  "cpf": "529.982.247-25",
+  "email": "joao@email.com",
+  "senha": ""
 }
 ```
 
-**Resposta (200 OK):** retorna o usuário atualizado (sem a senha).
-
-**Erros possíveis:**
-- `400 Bad Request` — ID inválido ou dados malformados
-- `404 Not Found` — usuário não encontrado
-
 ---
 
-#### `DELETE /users/{userID}` — Deletar usuário
+### 🔑 Login
 
-Remove um usuário pelo ID.
-
-**Parâmetro de URL:** `userID` (número inteiro)
-
-**Resposta (204 No Content):** sem corpo na resposta.
-
-**Erros possíveis:**
-- `400 Bad Request` — ID inválido
-- `404 Not Found` — usuário não encontrado
-
----
-
-### Livros
-
-#### `GET /books` — Buscar livros
-
-Realiza uma busca na **Google Books API** (`https://www.googleapis.com/books/v1/volumes`) com o texto enviado no corpo da requisição.
-
-> ⚠️ Este endpoint requer uma **chave de API** do Google Books passada via query string.
-
-**Como obter uma chave:**
-1. Acesse o Google Cloud Console
-2. Crie um projeto e ative a **Books API**
-3. Vá em **APIs & Services → Credentials → Criar credenciais → Chave de API**
-
-**URL com a chave:**
+#### Fazer login
 ```
-GET http://localhost:8080/books?key=SUA_CHAVE_AQUI
+POST http://localhost:8080/login
 ```
-
-**Body (texto puro — raw/Text no Postman):**
-```
-harry potter
-```
-
-**Resposta (200 OK):**
+Body → raw → JSON:
 ```json
 {
-  "kind": "books#volumes",
-  "totalItems": 1024,
-  "items": [
-    {
-      "id": "abc123",
-      "volumeInfo": {
-        "title": "Harry Potter and the Sorcerer's Stone",
-        "authors": ["J.K. Rowling"],
-        "publishedDate": "1997"
-      }
-    }
-  ]
+  "email": "joao@email.com",
+  "senha": "123456"
+}
+```
+Resposta `200`:
+```
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+> O corpo da resposta é o token JWT em texto puro. Salve-o para usar nas próximas requisições.
+
+---
+
+### 📖 Pesquisa de Livros
+
+#### Pesquisar no Google Books
+```
+POST http://localhost:8080/books/search?key=SUA_GOOGLE_API_KEY
+```
+Body → raw → **Text**:
+```
+Harry Potter
+```
+Resposta `200`: JSON completo da Google Books API com lista de livros encontrados.
+
+> A chave da Google Books API é opcional — sem ela funciona, mas com limite menor de requisições. Gere a sua em: https://console.cloud.google.com/apis/credentials
+
+---
+
+### 📚 Biblioteca Pessoal
+
+> Todas as rotas abaixo exigem o header:
+> ```
+> Authorization: Bearer {{token}}
+> ```
+> Os livros são sempre vinculados ao usuário dono do token — não é possível ver ou mexer na biblioteca de outro usuário.
+
+---
+
+#### Adicionar livro à biblioteca
+```
+POST http://localhost:8080/library
+```
+Body → raw → JSON:
+```json
+{
+  "title": "Harry Potter e a Pedra Filosofal",
+  "author": "J.K. Rowling",
+  "description": "Primeiro livro da saga Harry Potter",
+  "publisher": "Rocco",
+  "year": 1997
+}
+```
+> `title` e `author` são obrigatórios. Os demais campos são opcionais.
+
+Resposta `201`:
+```json
+{
+  "id": 1,
+  "user_id": 1,
+  "title": "Harry Potter e a Pedra Filosofal",
+  "author": "J.K. Rowling",
+  "description": "Primeiro livro da saga Harry Potter",
+  "publisher": "Rocco",
+  "year": 1997,
+  "created_at": "2026-06-08T10:00:00Z"
 }
 ```
 
->  O endpoint usa um timeout de **10 segundos** para a requisição à API do Google.
-
 ---
 
-## Segurança
-
-- As senhas dos usuários são armazenadas com hash **bcrypt** (custo padrão) — nunca em texto puro.
-- A senha é removida de **todas** as respostas da API, tanto no create quanto no fetch.
-- A validação de e-mail verifica a presença do caractere `@`.
-
----
-
-##  Validações do Modelo de Usuário
-
-Ao criar ou atualizar um usuário, as seguintes regras são aplicadas:
-
-| Campo | Regra |
-|---|---|
-| `name` | Obrigatório, não pode ser vazio |
-| `email` | Obrigatório, deve conter `@` |
-| `cpf` | Obrigatório, não pode ser vazio |
-| `senha` | Obrigatório apenas na **criação** |
-
-Após a validação, os campos de texto são tratados com `strings.TrimSpace()` para remover espaços desnecessários.
-
----
-
-##  Como o Projeto Está Organizado (Arquitetura)
-
-O projeto segue uma separação de responsabilidades em camadas:
-
+#### Ver toda a biblioteca
 ```
-Requisição HTTP
-     │
-     ▼
-  Router (gorilla/mux)
-     │  Direciona para o handler correto
-     ▼
-  Controller
-     │  Lê o body, chama o model, monta a resposta
-     ▼
-  Model (models/users.go)
-     │  Valida e formata os dados (regras de negócio)
-     ▼
-  "Banco" em Memória (slice []User)
+GET http://localhost:8080/library
+```
+Resposta `200`:
+```json
+[
+  {
+    "id": 1,
+    "user_id": 1,
+    "title": "Harry Potter e a Pedra Filosofal",
+    "author": "J.K. Rowling",
+    "description": "Primeiro livro da saga Harry Potter",
+    "publisher": "Rocco",
+    "year": 1997,
+    "created_at": "2026-06-08T10:00:00Z"
+  }
+]
 ```
 
-- **`router/`** — responsável apenas por criar o roteador e registrar as rotas.
-- **`controller/`** — responsável por receber a requisição HTTP, processar a lógica e retornar a resposta.
-- **`models/`** — contém as structs e as regras de negócio (validação, formatação, hash de senha).
+---
+
+#### Ver um livro específico
+```
+GET http://localhost:8080/library/1
+```
+Resposta `200`:
+```json
+{
+  "id": 1,
+  "user_id": 1,
+  "title": "Harry Potter e a Pedra Filosofal",
+  "author": "J.K. Rowling",
+  "description": "Primeiro livro da saga Harry Potter",
+  "publisher": "Rocco",
+  "year": 1997,
+  "created_at": "2026-06-08T10:00:00Z"
+}
+```
 
 ---
 
-##  Observações e Limitações
-
-- **Sem banco de dados:** todos os dados ficam em um slice Go (`[]models.User`) na memória. Ao reiniciar o servidor, os dados são perdidos.
-- **Sem autenticação:** os endpoints não exigem token ou sessão.
-- **Sem paginação:** o `GET /users` retorna todos os usuários de uma vez.
-- **Busca de livros via body:** o endpoint `GET /books` recebe a query no corpo da requisição (texto puro), o que é incomum para métodos GET — o padrão seria usar query string (`?q=golang`).
-
----
-
-## Possíveis Melhorias Futuras
-
-- [ ] Integrar com banco de dados (PostgreSQL, SQLite, etc.)
-- [ ] Adicionar autenticação com JWT
-- [ ] Usar query string no endpoint de livros (`GET /books?q=golang`)
-- [ ] Adicionar middleware de logging
-- [ ] Implementar paginação no `GET /users`
-- [ ] Adicionar testes unitários
+#### Editar um livro
+```
+PUT http://localhost:8080/library/1
+```
+Body → raw → JSON:
+```json
+{
+  "title": "Harry Potter e a Pedra Filosofal",
+  "author": "J.K. Rowling",
+  "description": "Edição comemorativa 20 anos",
+  "publisher": "Rocco",
+  "year": 2017
+}
+```
+Resposta `204` (sem body).
 
 ---
 
-## Licença
+#### Remover um livro
+```
+DELETE http://localhost:8080/library/1
+```
+Resposta `204` (sem body).
 
-Projeto desenvolvido para fins educacionais. Sinta-se livre para estudar e modificar.
+---
+
+## ❌ Respostas de erro
+
+Todos os erros seguem o formato:
+
+```json
+{
+  "error": "mensagem do erro"
+}
+```
+
+| Status | Situação                                 |
+|--------|------------------------------------------|
+| 400    | Body inválido ou campo faltando          |
+| 401    | Token ausente, inválido ou expirado      |
+| 404    | Recurso não encontrado                   |
+| 422    | Erro ao ler o body da requisição         |
+| 500    | Erro interno do servidor                 |
+
+---
+
+## 🔄 Fluxo completo de uso
+
+```
+1. POST /users          → cria sua conta
+2. POST /login          → recebe o token JWT
+3. POST /books/search   → pesquisa livros no Google
+4. POST /library        → adiciona um livro à sua biblioteca
+5. GET  /library        → vê todos os seus livros
+6. PUT  /library/{id}   → edita um livro
+7. DELETE /library/{id} → remove um livro
+```
